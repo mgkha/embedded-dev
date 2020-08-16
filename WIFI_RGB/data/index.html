@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Web Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h1>ESP32 Web Server</h1>
+
+  <button onclick="closeAll()">Turn All OFF</button> 
+  
+  <label style="margin-left: 50px;"">Change all leds</label>
+  <input type="color" id="btnChangeAll" onchange="changeAll(event)" style="width: 200px;"/><hr>
+
+  <div id="leds"></div><hr>
+
+
+</body>
+<script>
+  (async function() {
+    const leds = document.getElementById("leds");
+    for (let i = 0; i < 30; i++) {
+      var colorPicker = document.createElement("INPUT");
+      colorPicker.setAttribute("type", "color");
+      colorPicker.setAttribute("id", `led${i}`);
+      colorPicker.setAttribute("onchange", `printColor(event, ${i})`);
+      leds.append(colorPicker);
+    }
+    const response = await (await fetch('./getleds')).json();
+    const ledsData = await response.leds;
+    for (let i = 0; i < ledsData.length; i++) {
+      const ledIndex = ledsData[i].led;
+      document.getElementById(`led${ledIndex}`).value = rgbToHex(ledsData[i].color.R, ledsData[i].color.G, ledsData[i].color.B);
+    }
+  })();
+
+  function printColor(e, led) {
+    const color = e.target.value;
+    const R = parseInt(color.substr(1,2), 16);
+    const G = parseInt(color.substr(3,2), 16);
+    const B = parseInt(color.substr(5,2), 16);
+    
+    fetch('./send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', },
+      body: JSON.stringify({
+        led, 
+        color: { R, G, B }
+      }),
+    })
+  }
+
+  function rgbToHex(r, g, b){
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  function changeAll(event) {
+    sendLEDs(event.target.value);
+  }
+  function closeAll() {
+    sendLEDs('#000000');
+  }
+
+  function sendLEDs(hex) {
+    const R = parseInt(hex.substr(1,2), 16);
+    const G = parseInt(hex.substr(3,2), 16);
+    const B = parseInt(hex.substr(5,2), 16);
+
+    for (let i = 0; i < 30; i++) {
+      fetch('./send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({
+          led: i, 
+          color: { R, G, B }
+        }),
+      })
+    }
+    location.reload();
+  }
+</script>
+</html>

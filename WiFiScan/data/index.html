@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Web Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h1>ESP32 Web Server</h1>
+  <div id="leds"></div>
+</body>
+<script>
+  (function() {
+    const leds = document.getElementById("leds");
+    for (let i = 0; i < 30; i++) {
+      var colorPicker = document.createElement("INPUT");
+      colorPicker.setAttribute("type", "color");
+      colorPicker.setAttribute("id", `led${i}`);
+      colorPicker.setAttribute("onchange", `printColor(event, ${i})`);
+      leds.append(colorPicker);
+    }
+  })();
+
+  function printColor(e, led) {
+    const color = e.target.value;
+    const R = parseInt(color.substr(1,2), 16);
+    const G = parseInt(color.substr(3,2), 16);
+    const B = parseInt(color.substr(5,2), 16);
+    
+    fetch('./send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', },
+      body: JSON.stringify({
+        led, 
+        color: { R, G, B }
+      }),
+    })
+  }
+</script>
+</html>
